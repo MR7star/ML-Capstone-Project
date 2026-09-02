@@ -4,9 +4,9 @@
 
 ### Team Members
 
-- Member 1
-- Member 2
-- Member 3
+- Jishnu Nambiar (CB.SC.U4CSE24019)
+- Muthu Rupesh M J (CB.SC.U4CSE24030)
+- Ojas Joshi *CB.SC.U4CSE24034)
 
 ## Problem Statement
 

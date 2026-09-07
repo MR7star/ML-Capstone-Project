@@ -23,61 +23,30 @@ MUTED = "#64748b"        # Slate muted
 DARK = "#0f172a"         # Deep slate
 
 
-def title(text: str, kicker: str = None):
+def title(text: str = "", kicker: str = None):
     """
-    Renders a clean, modern cell header with an optional kicker tag.
-    Directly addresses user requirement: title("...", kicker="...")
+    Optional section title helper. Kept simple and theme-safe.
     """
-    kicker_html = f"<div style='font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: {ACCENT}; margin-bottom: 4px;'>{kicker}</div>" if kicker else ""
-    html = f"""
-    <div style='margin-top: 14px; margin-bottom: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;'>
-        {kicker_html}
-        <h2 style='margin: 0; font-size: 20px; font-weight: 700; color: {DARK}; letter-spacing: -0.02em;'>{text}</h2>
-        <hr style='border: none; border-top: 1.5px solid #e2e8f0; margin-top: 8px; margin-bottom: 0;'/>
-    </div>
-    """
-    try:
-        display(HTML(html))
-    except Exception:
-        prefix = f"[{kicker.upper()}] " if kicker else ""
-        print(f"\n{'='*60}\n{prefix}{text}\n{'='*60}")
+    pass
 
 
 def hero(cards: list):
     """
-    Renders high-impact metric KPI cards.
-    cards: list of tuples -> (stat_value, label, color)
-    Example: hero([("89.4%", "Test Accuracy", "#16a34a"), ("0.654", "Weighted F1", "#2563eb")])
+    Prints a clean, single-line summary of key metrics.
+    Works naturally in both light and dark themes.
+    cards: list of tuples -> (stat_value, label, *optional_color)
     """
-    card_htmls = []
-    for stat, label, color in cards:
-        card = f"""
-        <div style='flex: 1; min-width: 150px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-right: 12px; margin-bottom: 8px;'>
-            <div style='font-size: 22px; font-weight: 800; color: {color}; line-height: 1.2;'>{stat}</div>
-            <div style='font-size: 12px; font-weight: 600; color: {MUTED}; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em;'>{label}</div>
-        </div>
-        """
-        card_htmls.append(card)
-
-    container = f"""
-    <div style='display: flex; flex-wrap: wrap; margin: 12px 0 16px 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;'>
-        {''.join(card_htmls)}
-    </div>
-    """
-    try:
-        display(HTML(container))
-    except Exception:
-        formatted = " | ".join([f"{label}: {stat}" for stat, label, _ in cards])
-        print(f"\n>>> [METRICS] {formatted}\n")
+    metrics = " | ".join([f"{label}: {stat}" for stat, label, *_ in cards])
+    print(metrics)
 
 
 def finish(fig, title_text: str, note: str = None):
     """
-    Standardizes plot aesthetics, titles, tight_layout, and optional explanatory notes.
+    Standardizes plot layout, title, and optional note.
     """
-    fig.suptitle(title_text, fontsize=13, fontweight="bold", y=1.02, color=DARK)
+    fig.suptitle(title_text, fontsize=12, fontweight="bold", y=1.02)
     if note:
-        fig.text(0.5, -0.04, note, ha="center", fontsize=9.5, color=MUTED, style="italic")
+        fig.text(0.5, -0.04, note, ha="center", fontsize=9, style="italic")
     plt.tight_layout()
     plt.show()
 

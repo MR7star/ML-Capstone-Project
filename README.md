@@ -1,4 +1,3 @@
-```markdown
 # 23CSE301 Machine Learning Capstone Project
 
 ## Online Retail Sales Forecasting & Multi-Track Customer Analytics
@@ -173,7 +172,5 @@ streamlit run app/main.py
 
 * All analytical interpretations, EDA insights, and feature engineering strategies were designed and implemented by the team members.
 * Generative AI tools were utilized strictly for code scaffolding, layout structuring, and documentation formatting assistance.
-
-```
 
 ```

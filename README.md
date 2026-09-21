@@ -98,7 +98,6 @@ Unsupervised partitioning evaluated via Silhouette Score, Davies-Bouldin Index, 
 | 9 | Lasso Regression | 0.8340 | 4888.65 | 1983.81 |
 | 10 | Decision Tree Regressor | 0.7711 | 5740.90 | 2071.07 |
 
-*(Note: Metric values are automatically updated upon executing full grid search runs in `notebooks/regression.ipynb`.)*
 
 ### Classification Track Performance Comparison
 

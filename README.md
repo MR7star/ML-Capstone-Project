@@ -85,20 +85,32 @@ Unsupervised partitioning evaluated via Silhouette Score, Davies-Bouldin Index, 
 
 ### Regression Track Performance Comparison
 
-| Algorithm | R² Score | RMSE | MAE | 5-Fold CV R² | Rank |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| Linear Regression | - | - | - | - | - |
-| Ridge Regression | - | - | - | - | - |
-| Lasso Regression | - | - | - | - | - |
-| ElasticNet | - | - | - | - | - |
-| Polynomial Regression | - | - | - | - | - |
-| Decision Tree Regressor | - | - | - | - | - |
-| Random Forest Regressor | - | - | - | - | - |
-| Gradient Boosting Regressor | - | - | - | - | - |
-| Support Vector Regressor | - | - | - | - | - |
-| K-Nearest Neighbors Regressor | - | - | - | - | - |
+| Rank | Model | R² | RMSE | MAE |
+|---:|---|---:|---:|---:|
+| 1 | Support Vector Regressor | 0.8964 | 3861.66 | 1588.10 |
+| 2 | Random Forest Regressor | 0.8786 | 4180.98 | 1564.38 |
+| 3 | K-Nearest Neighbors Regressor | 0.8690 | 4344.02 | 1823.61 |
+| 4 | Polynomial Regression | 0.8658 | 4395.71 | 1748.68 |
+| 5 | Gradient Boosting Regressor | 0.8632 | 4438.79 | 1688.14 |
+| 6 | Linear Regression | 0.8427 | 4758.54 | 1993.78 |
+| 7 | Ridge Regression | 0.8427 | 4759.92 | 1992.16 |
+| 8 | ElasticNet Regression | 0.8373 | 4840.66 | 1977.25 |
+| 9 | Lasso Regression | 0.8340 | 4888.65 | 1983.81 |
+| 10 | Decision Tree Regressor | 0.7711 | 5740.90 | 2071.07 |
 
 *(Note: Metric values are automatically updated upon executing full grid search runs in `notebooks/regression.ipynb`.)*
+
+### Classification Track Performance Comparison
+
+Part A — Final Model Comparison
+
+| Algorithm | Accuracy | Weighted F1 | Macro F1 | Positive Recall | Positive Precision | Positive F1 | ROC-AUC | PR-AUC |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Decision Tree** | **89.74%** | **0.8931** | **0.7881** | **57.9%** | **70.6%** | **0.6360** | **0.9177** | **0.6882** |
+| Support Vector Machine | 88.89% | 0.8811 | 0.7591 | 50.0% | 69.7% | 0.5823 | 0.8662 | 0.6646 |
+| Logistic Regression | 88.12% | 0.8630 | 0.7072 | 35.6% | 74.3% | 0.4814 | 0.8875 | 0.6237 |
+| K-Nearest Neighbors | 87.19% | 0.8450 | 0.6592 | 26.4% | 74.3% | 0.3900 | 0.8301 | 0.5318 |
+| Gaussian Naive Bayes | 68.78% | 0.7301 | 0.6088 | 77.0% | 30.1% | 0.4330 | 0.7941 | 0.4475 |
 
 ---
 

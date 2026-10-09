@@ -228,3 +228,26 @@ def part_a_models(random_state: int = 42):
         "Decision Tree": DecisionTreeClassifier(max_depth=5, min_samples_leaf=10, random_state=random_state),
         "Support Vector Machine": SVC(kernel="rbf", C=5.0, random_state=random_state),
     }
+
+
+def tune(estimator, param_grid, X_train, y_train, random_state: int = 42):
+    """GridSearchCV on the training partition only (5-fold stratified, weighted F1)."""
+    from sklearn.model_selection import GridSearchCV, StratifiedKFold
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
+    search = GridSearchCV(estimator, param_grid, cv=cv, scoring="f1_weighted", n_jobs=-1)
+    return search.fit(X_train, y_train)
+
+
+TUNING_COLS = ["Algorithm", "Accuracy", "Precision (weighted)", "Recall (weighted)", "F1 (weighted)",
+               "F1 (buy)", "Recall (buy)", "ROC-AUC", "PR-AUC", "FP", "FN", "Fit time (s)"]
+
+
+def tuning_table(name, base_model, base_seconds, search, X_test, y_test):
+    """Untuned vs tuned test metrics, plus a row with the change."""
+    rows = pd.DataFrame([
+        evaluate_classifier(f"{name} (untuned)", base_model, X_test, y_test, base_seconds),
+        evaluate_classifier(f"{name} (tuned)", search.best_estimator_, X_test, y_test, search.refit_time_),
+    ])[TUNING_COLS]
+    change = rows.iloc[1, 1:] - rows.iloc[0, 1:]
+    rows.loc[2] = ["Change (tuned - untuned)", *change.values]
+    return rows.astype({"FP": int, "FN": int})

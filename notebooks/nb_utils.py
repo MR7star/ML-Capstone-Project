@@ -200,11 +200,14 @@ def plot_confusion(ax, y_true, y_pred, title):
     return cm
 
 
-def style_table(df, highlight_cols=(), lower_better=(), fmt="{:.4f}"):
-    """Formats numeric columns and highlights the best value in each listed column."""
+def style_table(df, highlight_cols=(), lower_better=(), fmt="{:.4f}", formats=None):
+    """Formats numeric columns and highlights the best value in each listed column.
+    formats: optional {column: format string} overrides."""
     num_cols = df.select_dtypes("number").columns
     int_cols = [c for c in num_cols if pd.api.types.is_integer_dtype(df[c])]
-    styler = df.style.format({c: ("{:,}" if c in int_cols else fmt) for c in num_cols})
+    col_fmt = {c: ("{:,}" if c in int_cols else fmt) for c in num_cols}
+    col_fmt.update(formats or {})
+    styler = df.style.format(col_fmt)
     hi = [c for c in highlight_cols if c not in lower_better]
     lo = [c for c in highlight_cols if c in lower_better]
     if hi:

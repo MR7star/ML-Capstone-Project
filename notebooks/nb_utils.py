@@ -86,7 +86,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-def load_and_preprocess_data(test_size: float = 0.20, random_state: int = 42):
+def load_and_preprocess_data(test_size: float = 0.20, random_state: int = 42, drop_duplicates: bool = False):
     """
     Loads, cleans, engineers features, and splits the data.
     Guarantees:
@@ -95,6 +95,8 @@ def load_and_preprocess_data(test_size: float = 0.20, random_state: int = 42):
     - Scaled representations available with feature names aligned.
     """
     raw_df = load_raw_data()
+    if drop_duplicates:  # only used for the duplicate sensitivity check
+        raw_df = raw_df.drop_duplicates()
     df = engineer_features(raw_df)
 
     # Encode target Revenue (True -> 1, False -> 0)
@@ -149,4 +151,80 @@ def load_and_preprocess_data(test_size: float = 0.20, random_state: int = 42):
         "cat_cols": cat_cols,
         "scaler": scaler,
         "encoder": encoder
+    }
+
+
+def get_scores(model, X):
+    """Positive-class probability, or decision_function for models without predict_proba (SVC)."""
+    if hasattr(model, "predict_proba"):
+        return model.predict_proba(X)[:, 1]
+    return model.decision_function(X)
+
+
+def evaluate_classifier(name, model, X_test, y_test, fit_seconds=np.nan):
+    """Returns one row of test-set metrics for a fitted binary classifier."""
+    from sklearn.metrics import (accuracy_score, precision_score, recall_score, f1_score,
+                                 roc_auc_score, average_precision_score, confusion_matrix)
+    y_pred = model.predict(X_test)
+    scores = get_scores(model, X_test)
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+    return {
+        "Algorithm": name,
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "Precision (weighted)": precision_score(y_test, y_pred, average="weighted", zero_division=0),
+        "Recall (weighted)": recall_score(y_test, y_pred, average="weighted"),
+        "F1 (weighted)": f1_score(y_test, y_pred, average="weighted"),
+        "F1 (macro)": f1_score(y_test, y_pred, average="macro"),
+        "Precision (buy)": precision_score(y_test, y_pred, pos_label=1, zero_division=0),
+        "Recall (buy)": recall_score(y_test, y_pred, pos_label=1),
+        "F1 (buy)": f1_score(y_test, y_pred, pos_label=1),
+        "ROC-AUC": roc_auc_score(y_test, scores),
+        "PR-AUC": average_precision_score(y_test, scores),
+        "TN": tn, "FP": fp, "FN": fn, "TP": tp,
+        "Fit time (s)": fit_seconds,
+    }
+
+
+def plot_confusion(ax, y_true, y_pred, title):
+    """Confusion matrix heatmap with the same labels and colours used across the notebook."""
+    import seaborn as sns
+    from sklearn.metrics import confusion_matrix
+    cm = confusion_matrix(y_true, y_pred)
+    sns.heatmap(cm, annot=True, fmt=",d", cmap="Blues", cbar=False, ax=ax,
+                annot_kws={"size": 13, "weight": "bold"})
+    ax.set_title(title, fontsize=11, fontweight="bold")
+    ax.set_xlabel("Predicted Label")
+    ax.set_ylabel("True Label")
+    ax.set_xticklabels(["No Purchase", "Purchase"])
+    ax.set_yticklabels(["No Purchase", "Purchase"], rotation=0)
+    return cm
+
+
+def style_table(df, highlight_cols=(), lower_better=(), fmt="{:.4f}"):
+    """Formats numeric columns and highlights the best value in each listed column."""
+    num_cols = df.select_dtypes("number").columns
+    int_cols = [c for c in num_cols if pd.api.types.is_integer_dtype(df[c])]
+    styler = df.style.format({c: ("{:,}" if c in int_cols else fmt) for c in num_cols})
+    hi = [c for c in highlight_cols if c not in lower_better]
+    lo = [c for c in highlight_cols if c in lower_better]
+    if hi:
+        styler = styler.highlight_max(subset=hi, color="#bfdbfe")
+    if lo:
+        styler = styler.highlight_min(subset=lo, color="#bfdbfe")
+    return styler.hide(axis="index")
+
+
+def part_a_models(random_state: int = 42):
+    """The five Part A classifiers with the configurations selected in Review 1."""
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.svm import SVC
+    return {
+        "Logistic Regression": LogisticRegression(max_iter=1000, random_state=random_state),
+        "K-Nearest Neighbors": KNeighborsClassifier(n_neighbors=13, metric="manhattan"),
+        "Gaussian Naive Bayes": GaussianNB(var_smoothing=1e-3),
+        "Decision Tree": DecisionTreeClassifier(max_depth=5, min_samples_leaf=10, random_state=random_state),
+        "Support Vector Machine": SVC(kernel="rbf", C=5.0, random_state=random_state),
     }

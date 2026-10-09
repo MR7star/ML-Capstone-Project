@@ -111,7 +111,7 @@ Part A — Final Model Comparison
 | K-Nearest Neighbors | 87.19% | 0.8450 | 0.6592 | 26.4% | 74.3% | 0.3900 | 0.8301 | 0.5318 |
 | Gaussian Naive Bayes | 68.78% | 0.7301 | 0.6088 | 77.0% | 30.1% | 0.4330 | 0.7941 | 0.4475 |
 
-### Classification Track Performance Comparison
+### Classification Track — All Ten Algorithms (Review 2)
 
 Dataset: UCI Online Shoppers Purchasing Intention (`data/raw/online_shoppers_intention.csv`), 12,330 sessions, target `Revenue` (15.5% buyers). Same stratified 80:20 split (`random_state=42`) for every model; test set n = 2,466 with 382 buyers. Part B models tuned with `GridSearchCV` (5-fold stratified, weighted F1) on the training set only.
 

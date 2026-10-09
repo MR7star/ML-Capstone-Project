@@ -100,6 +100,32 @@ Unsupervised partitioning evaluated via Silhouette Score, Davies-Bouldin Index, 
 
 *(Note: Metric values are automatically updated upon executing full grid search runs in `notebooks/regression.ipynb`.)*
 
+### Classification Track Performance Comparison
+
+Dataset: UCI Online Shoppers Purchasing Intention (`data/raw/online_shoppers_intention.csv`), 12,330 sessions, target `Revenue` (15.5% buyers). Same stratified 80:20 split (`random_state=42`) for every model; test set n = 2,466 with 382 buyers. Part B models tuned with `GridSearchCV` (5-fold stratified, weighted F1) on the training set only.
+
+| Algorithm | Accuracy | Precision (w) | Recall (w) | F1 (w) | F1 (buy) | ROC-AUC | PR-AUC | Missed buyers (FN) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Gradient Boosting** | 0.9015 | 0.8955 | 0.9015 | **0.8971** | **0.6483** | **0.9300** | **0.7458** | 158 |
+| Random Forest | 0.9015 | 0.8944 | 0.9015 | 0.8953 | 0.6346 | 0.9136 | 0.7262 | 171 |
+| Bagging | 0.8986 | 0.8931 | 0.8986 | 0.8949 | 0.6439 | 0.9177 | 0.7140 | 156 |
+| Decision Tree | 0.8974 | 0.8913 | 0.8974 | 0.8931 | 0.6360 | 0.9177 | 0.6882 | 161 |
+| AdaBoost | 0.8913 | 0.8879 | 0.8913 | 0.8894 | 0.6339 | 0.9130 | 0.6311 | 150 |
+| Support Vector Machine | 0.8889 | 0.8794 | 0.8889 | 0.8811 | 0.5823 | 0.8662 | 0.6646 | 191 |
+| MLP | 0.8889 | 0.8789 | 0.8889 | 0.8799 | 0.5732 | 0.9037 | 0.6704 | 198 |
+| Logistic Regression | 0.8812 | 0.8692 | 0.8812 | 0.8630 | 0.4814 | 0.8875 | 0.6237 | 246 |
+| K-Nearest Neighbors | 0.8719 | 0.8582 | 0.8719 | 0.8450 | 0.3900 | 0.8301 | 0.5318 | 281 |
+| Gaussian Naive Bayes | 0.6878 | 0.8418 | 0.6878 | 0.7301 | 0.4330 | 0.7941 | 0.4475 | 88 |
+| Dummy (most frequent) | 0.8451 | 0.7142 | 0.8451 | 0.7741 | 0.0000 | 0.5000 | 0.1549 | 382 |
+
+Classification key findings:
+* Selected model: Gradient Boosting (learning_rate 0.05, max_depth 3, 100 trees). 5-fold CV weighted F1 0.9002 ± 0.0049, ROC-AUC 0.9315 ± 0.0030.
+* The ensembles beat the Review 1 decision tree only slightly on weighted F1 (+0.0040) but more on ranking (PR-AUC +0.0576).
+* All 10 models rank `PageValues` as their most important feature. Sessions with PageValues = 0 convert at 3.85%, those with PageValues > 0 at 56.34%.
+* Accuracy is misleading here: the dummy model gets 84.51% and finds no buyers.
+* Lowering the decision threshold from 0.5 to 0.33 (chosen by CV on the training set) raises buyer recall from 0.5864 to 0.7173.
+* Data integrity: only 29 test rows have an exact duplicate in training (all non-buyers); removing them changes the tree's weighted F1 by -0.0013. `PageValues` is not leakage, but without it the decision tree's ROC-AUC drops from 0.9177 to 0.7157.
+
 ---
 
 ## Repository Structure

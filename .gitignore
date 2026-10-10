@@ -29,4 +29,4 @@ Thumbs.db
 *.joblib
 
 # Temporary files
-*.tmp
+*.tmpdata/raw/2019-Oct.csv

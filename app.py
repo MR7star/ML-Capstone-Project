@@ -107,7 +107,8 @@ p, span, label {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 255px;
+    height: 100%;
+    min-height: 280px;
     margin-bottom: 0.75rem;
 }
 
@@ -133,7 +134,8 @@ p, span, label {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 180px;
+    height: 100%;
+    min-height: 200px;
     margin-bottom: 0.75rem;
 }
 
@@ -244,26 +246,29 @@ p, span, label {
 }
 
 .pastel-notice {
-    background-color: rgba(232, 185, 168, 0.22);
-    border: 1px solid #E8B9A8;
-    border-radius: 10px;
-    padding: 1.1rem 1.35rem;
+    background-color: rgba(232, 185, 168, 0.12);
+    border: 1px solid rgba(232, 185, 168, 0.4);
+    border-radius: 8px;
+    padding: 0.85rem 1.15rem;
     color: #73758A;
-    margin: 1rem 0;
-    line-height: 1.55;
+    margin: 0.5rem 0 1.5rem 0;
+    line-height: 1.45;
+    font-size: 0.85rem;
 }
 
 .pastel-notice b {
     color: #303247;
+    font-weight: 600;
 }
 
 .pastel-notice code {
-    background-color: #FFFFFF;
-    color: #303247;
-    padding: 0.15rem 0.45rem;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #8c4633;
+    padding: 0.12rem 0.4rem;
     border-radius: 4px;
-    border: 1px solid #E6E4EF;
-    font-size: 0.85rem;
+    border: 1px solid rgba(232, 185, 168, 0.3);
+    font-size: 0.82rem;
+    font-weight: 500;
 }
 
 .stButton > button {
@@ -440,7 +445,7 @@ if page == "Home":
                 <span style="color:#73758A;">R&sup2; Score: <b>0.892</b> &bull; RMSE: <b>&pound;3,940</b></span>
             </p>
         </div>""", unsafe_allow_html=True)
-        st.button("Explore Regression →", key="btn_reg", use_container_width=True,
+        st.button("Explore Regression →", key="btn_reg", width='stretch',
                   on_click=go_to, args=("Regression",))
 
     with col2:
@@ -455,7 +460,7 @@ if page == "Home":
                 <span style="color:#73758A;">Weighted F1: <b>0.883</b> &bull; ROC-AUC: <b>0.863</b></span>
             </p>
         </div>""", unsafe_allow_html=True)
-        st.button("Explore Classification →", key="btn_clf", use_container_width=True,
+        st.button("Explore Classification →", key="btn_clf", width='stretch',
                   on_click=go_to, args=("Classification",))
 
     with col3:
@@ -470,7 +475,7 @@ if page == "Home":
                 <span style="color:#73758A;">Silhouette: <b>0.542</b> &bull; Calinski-H: <b>15,991</b></span>
             </p>
         </div>""", unsafe_allow_html=True)
-        st.button("Explore Clustering →", key="btn_clust", use_container_width=True,
+        st.button("Explore Clustering →", key="btn_clust", width='stretch',
                   on_click=go_to, args=("Clustering",))
 
     st.markdown('<p class="section-header">Verified Model Performance Highlights</p>', unsafe_allow_html=True)
@@ -541,7 +546,7 @@ elif page == "Regression":
                 )
 
             st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
-            submitted = st.form_submit_button("Predict Daily Sales Volume", use_container_width=True)
+            submitted = st.form_submit_button("Predict Daily Sales Volume", width='stretch')
 
         if submitted:
             row = pd.DataFrame([{
@@ -592,7 +597,7 @@ elif page == "Regression":
         ]).sort_values("R2", ascending=False)
         st.dataframe(
             reg_table.style.format({"R2": "{:.4f}", "RMSE": "{:,.2f}", "MAE": "{:,.2f}"}),
-            use_container_width=True, hide_index=True,
+            width='stretch', hide_index=True,
         )
 
 
@@ -666,7 +671,7 @@ elif page == "Classification":
                 traffic = t4.number_input("Traffic Type (1-20)", 1, 20, 2)
 
             st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
-            submitted = st.form_submit_button("Predict Purchase Intent", use_container_width=True)
+            submitted = st.form_submit_button("Predict Purchase Intent", width='stretch')
 
         if submitted:
             total_pages = admin + info + prod
@@ -736,7 +741,7 @@ elif page == "Classification":
                 "Accuracy": "{:.1%}", "F1 (Weighted)": "{:.4f}",
                 "ROC-AUC": "{:.4f}", "Positive Recall": "{:.1%}",
             }),
-            use_container_width=True, hide_index=True,
+            width='stretch', hide_index=True,
         )
 
 
@@ -801,9 +806,6 @@ elif page == "Clustering":
             </p>
         </div>""", unsafe_allow_html=True)
 
-    if km_model is None:
-        artifact_missing_warning("Clustering")
-
     st.markdown('<p class="section-header">MiniBatch K-Means (K=4) — Clustering Validation</p>', unsafe_allow_html=True)
     m1, m2, m3 = st.columns(3, gap="medium")
     for col, val, lbl in [
@@ -826,7 +828,7 @@ elif page == "Clustering":
         })
         st.dataframe(
             dist_df.style.format({"Sessions": "{:,.0f}", "Percentage (%)": "{:.2f}%"}),
-            use_container_width=True, hide_index=True
+            width='stretch', hide_index=True
         )
 
     with col_b:
@@ -842,7 +844,7 @@ elif page == "Clustering":
                 "Products": "{:.2f}", "Views": "{:.2f}", "Carts": "{:.2f}",
                 "Avg Price (£)": "{:,.2f}", "Duration (min)": "{:.2f}"
             }),
-            use_container_width=True, hide_index=True
+            width='stretch', hide_index=True
         )
 
     if km_model is not None:
@@ -861,7 +863,7 @@ elif page == "Clustering":
                 max_price = c1.number_input("Max Price Viewed (£)", 0.0, 10000.0, 100.0, step=0.5)
                 session_dur = c2.number_input("Session Duration (minutes)", 0.0, 600.0, 5.0, step=0.5)
 
-            submitted = st.form_submit_button("Assign to Cluster", use_container_width=True)
+            submitted = st.form_submit_button("Assign to Cluster", width='stretch')
 
         if submitted:
             row = np.array([[uniq_prod, uniq_cat, total_views, cart_add, uniq_carted,
@@ -895,8 +897,17 @@ elif page == "Clustering":
             "Davies-Bouldin": "{:.3f}",
             "Calinski-Harabasz": "{:,.0f}",
         }),
-        use_container_width=True, hide_index=True,
+        width='stretch', hide_index=True,
     )
+
+    if km_model is None:
+        st.markdown(
+            '<div class="error-box" style="margin-top:1.5rem;padding:0.75rem 1rem;background-color:rgba(232,185,168,0.08);border:1px solid rgba(232,185,168,0.3);border-radius:8px;font-size:0.82rem;color:#73758A;line-height:1.4;">'
+            '<b>Note:</b> Cluster assignment feature requires model artifacts. '
+            'To generate from the 5.3GB dataset, run: <code style="background-color:rgba(255,255,255,0.7);color:#8c4633;padding:0.1rem 0.35rem;border-radius:3px;border:1px solid rgba(232,185,168,0.3);font-size:0.8rem;">python export_models.py --task clustering</code>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
 
 # ════════════════════ MODEL COMPARISON ════════════════════════════════════════
@@ -931,7 +942,7 @@ elif page == "Model Comparison":
 
         st.dataframe(
             reg_df.style.format({"R2": "{:.4f}", "RMSE": "{:,.2f}", "MAE": "{:,.2f}"}),
-            use_container_width=True, hide_index=True,
+            width='stretch', hide_index=True,
         )
 
         fig, ax = plt.subplots(figsize=(9, 4.8))
@@ -945,7 +956,7 @@ elif page == "Model Comparison":
         ax.set_axisbelow(True)
         ax.legend(loc="lower right")
         plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, width='stretch')
         plt.close()
 
     with tab2:
@@ -966,7 +977,7 @@ elif page == "Model Comparison":
                 "Accuracy": "{:.1%}", "F1 (Weighted)": "{:.4f}",
                 "ROC-AUC": "{:.4f}", "Positive Recall": "{:.1%}",
             }),
-            use_container_width=True, hide_index=True,
+            width='stretch', hide_index=True,
         )
 
         fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
@@ -984,7 +995,7 @@ elif page == "Model Comparison":
         axes[1].grid(axis='x', linestyle='--', alpha=0.7)
         axes[1].set_axisbelow(True)
         plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, width='stretch')
         plt.close()
 
     with tab3:
@@ -1003,7 +1014,7 @@ elif page == "Model Comparison":
                 "Davies-Bouldin (lower=better)": "{:.3f}",
                 "Calinski-Harabasz (higher=better)": "{:,.0f}",
             }),
-            use_container_width=True, hide_index=True,
+            width='stretch', hide_index=True,
         )
 
         fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
@@ -1028,7 +1039,7 @@ elif page == "Model Comparison":
         axes[1].set_axisbelow(True)
         axes[1].legend(loc="upper right")
         plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
+        st.pyplot(fig, width='stretch')
         plt.close()
 
 

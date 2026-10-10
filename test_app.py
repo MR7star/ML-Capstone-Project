@@ -55,7 +55,7 @@ def test_clustering_page_missing_artifacts_warning():
     at.run()
     at.radio(key="nav_radio").set_value("Clustering").run()
     assert not at.exception
-    warning_boxes = [m.value for m in at.markdown if "error-box" in m.value or "Model artifacts not found" in m.value]
+    warning_boxes = [m.value for m in at.markdown if "export_models.py --task clustering" in m.value]
     assert len(warning_boxes) > 0
 
 

@@ -5,6 +5,7 @@ scikit-learn
 matplotlib
 seaborn
 joblib
+gdown
 
 numpy==2.4.6
 pandas==3.0.6
@@ -13,4 +14,4 @@ matplotlib==3.11.2
 seaborn==0.13.2
 jupyter==1.1.1
 joblib==1.6.0
-
+gdown==6.4.2

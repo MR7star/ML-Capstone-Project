@@ -141,9 +141,9 @@ def export_clustering():
     from sklearn.preprocessing import StandardScaler
     from sklearn.cluster import MiniBatchKMeans
 
-    print("Exporting clustering model (loading large dataset — this may take a few minutes) …")
+    print("Exporting clustering model (full pandas load with memory optimization) …")
 
-    df = pd.read_csv(ROOT / "data" / "raw" / "2019-Oct.csv")
+    df = pd.read_csv(ROOT / "data" / "raw" / "2019-Oct.csv", low_memory=False)
 
     df_clean = df.drop_duplicates()
     df_clean = df_clean.dropna(subset=["user_session"]).copy()
@@ -165,9 +165,17 @@ def export_clustering():
             unique_products_carted=("cart_product_id", "nunique"),
             avg_price_viewed=("view_price", "mean"),
             max_price_viewed=("view_price", "max"),
-            session_duration_minutes=("event_time", lambda x: (x.max() - x.min()).total_seconds() / 60),
+            session_start=("event_time", "min"),
+            session_end=("event_time", "max"),
         )
         .reset_index()
+    )
+
+    del df, df_clean
+
+    session_features["session_duration_minutes"] = (
+        (session_features["session_end"] - session_features["session_start"])
+        .dt.total_seconds() / 60
     )
 
     cluster_features = [
@@ -178,6 +186,7 @@ def export_clustering():
 
     X_cluster = session_features[cluster_features].replace([np.inf, -np.inf], np.nan).fillna(0)
 
+    print("  Fitting scaler and training MiniBatchKMeans …")
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_cluster)
 
@@ -205,7 +214,10 @@ def export_clustering():
     joblib.dump(mini_kmeans, MODELS_DIR / "clustering_model.pkl")
     joblib.dump(cluster_profile, MODELS_DIR / "cluster_profile.pkl")
     joblib.dump(cluster_summary, MODELS_DIR / "cluster_summary.pkl")
+
     print("  [OK] Clustering artifacts saved.")
+    print(f"  Notebook cluster sizes for comparison: 0=1,431,933, 1=6,770,409, 2=486,228, 3=555,851")
+    print(f"  Generated cluster sizes: {cluster_sizes.to_dict()}")
 
 
 if __name__ == "__main__":

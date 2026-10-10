@@ -30,3 +30,5 @@ Thumbs.db
 
 # Temporary files
 *.tmpdata/raw/2019-Oct.csv
+
+data/raw/2019-Oct.csv

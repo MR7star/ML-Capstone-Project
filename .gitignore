@@ -32,3 +32,7 @@ Thumbs.db
 *.tmpdata/raw/2019-Oct.csv
 
 data/raw/2019-Oct.csv
+
+data/raw/
+
+data/temp_session_features.parquet

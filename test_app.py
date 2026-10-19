@@ -50,13 +50,20 @@ def test_classification_prediction():
     assert len(pred_md) > 0
 
 
-def test_clustering_page_missing_artifacts_warning():
+def test_clustering_page_loads_artifacts_and_assigns_session():
     at = AppTest.from_file(APP_FILE, default_timeout=30)
     at.run()
     at.radio(key="nav_radio").set_value("Clustering").run()
     assert not at.exception
-    warning_boxes = [m.value for m in at.markdown if "export_models.py --task clustering" in m.value]
-    assert len(warning_boxes) > 0
+    assign_buttons = [b for b in at.button if b.label == "Assign to Cluster"]
+    if not assign_buttons:
+        warning_boxes = [m.value for m in at.markdown if "export_models.py --task clustering" in m.value]
+        assert len(warning_boxes) > 0
+        return
+
+    assign_buttons[0].click().run()
+    assert not at.exception
+    assert any("Assigned Cluster" in m.value for m in at.markdown)
 
 
 def test_model_comparison_page():
@@ -80,7 +87,7 @@ if __name__ == "__main__":
     test_navigation_to_regression()
     test_regression_prediction()
     test_classification_prediction()
-    test_clustering_page_missing_artifacts_warning()
+    test_clustering_page_loads_artifacts_and_assigns_session()
     test_model_comparison_page()
     test_about_page()
     print("All test_app.py tests completed successfully!")

@@ -6,6 +6,7 @@ matplotlib
 seaborn
 joblib
 gdown
+duckdb
 
 numpy==2.4.6
 pandas==3.0.6

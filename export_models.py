@@ -17,6 +17,9 @@ Creates:
 """
 
 import sys
+import os
+import shutil
+import tempfile
 import numpy as np
 import pandas as pd
 import joblib
@@ -138,86 +141,173 @@ def export_classification():
 # ─────────────────────────── CLUSTERING ────────────────────────────────────
 
 def export_clustering():
+    import duckdb
     from sklearn.preprocessing import StandardScaler
     from sklearn.cluster import MiniBatchKMeans
 
-    print("Exporting clustering model (full pandas load with memory optimization) …")
-
-    df = pd.read_csv(ROOT / "data" / "raw" / "2019-Oct.csv", low_memory=False)
-
-    df_clean = df.drop_duplicates()
-    df_clean = df_clean.dropna(subset=["user_session"]).copy()
-    df_clean["event_time"] = pd.to_datetime(df_clean["event_time"], errors="coerce")
-    df_clean["is_view"] = (df_clean["event_type"] == "view").astype("int8")
-    df_clean["is_cart"] = (df_clean["event_type"] == "cart").astype("int8")
-    df_clean["cart_product_id"] = df_clean["product_id"].where(df_clean["event_type"] == "cart")
-    df_clean["view_price"] = df_clean["price"].where(df_clean["event_type"] == "view")
-
-    print("  Aggregating session features …")
-    session_features = (
-        df_clean
-        .groupby("user_session", sort=False)
-        .agg(
-            unique_products_viewed=("product_id", "nunique"),
-            unique_categories_viewed=("category_id", "nunique"),
-            total_views=("is_view", "sum"),
-            cart_additions=("is_cart", "sum"),
-            unique_products_carted=("cart_product_id", "nunique"),
-            avg_price_viewed=("view_price", "mean"),
-            max_price_viewed=("view_price", "max"),
-            session_start=("event_time", "min"),
-            session_end=("event_time", "max"),
-        )
-        .reset_index()
-    )
-
-    del df, df_clean
-
-    session_features["session_duration_minutes"] = (
-        (session_features["session_end"] - session_features["session_start"])
-        .dt.total_seconds() / 60
-    )
-
+    print("Exporting clustering model using DuckDB global deduplication …")
     cluster_features = [
         "unique_products_viewed", "unique_categories_viewed", "total_views",
         "cart_additions", "unique_products_carted", "avg_price_viewed",
         "max_price_viewed", "session_duration_minutes",
     ]
 
-    X_cluster = session_features[cluster_features].replace([np.inf, -np.inf], np.nan).fillna(0)
+    raw_path = ROOT / "data" / "raw" / "2019-Oct.csv"
+    if not raw_path.exists():
+        raise FileNotFoundError(f"Clustering source dataset not found: {raw_path}")
 
-    print("  Fitting scaler and training MiniBatchKMeans …")
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_cluster)
+    # Keep DuckDB spill files and candidate artifacts separate from the live artifacts.
+    with tempfile.TemporaryDirectory(prefix="clustering-export-") as work_dir:
+        spill_dir = Path(work_dir) / "duckdb_spill"
+        spill_dir.mkdir()
+        candidate_dir = Path(tempfile.mkdtemp(prefix=".clustering-candidate-", dir=MODELS_DIR))
+        con = None
+        try:
+            con = duckdb.connect(config={
+                "memory_limit": "4GB",
+                "temp_directory": str(spill_dir),
+                "preserve_insertion_order": "true",
+                "threads": "4",
+            })
+            columns = [
+                "event_time", "event_type", "product_id", "category_id",
+                "category_code", "brand", "price", "user_id", "user_session",
+            ]
+            # Grouping by every input field gives drop_duplicates() global semantics;
+            # min(ordinality) retains the first input row for notebook-compatible order.
+            con.execute(f"""
+                CREATE TEMP TABLE deduplicated_events AS
+                SELECT {", ".join(columns)},
+                       MIN(ordinality) AS source_order,
+                       COUNT(*) AS source_copies
+                FROM read_csv_auto(
+                    ?, sample_size=100000,
+                    nullstr=['', '#N/A', '#N/A N/A', '#NA', '-1.#IND',
+                             '-1.#QNAN', '-NaN', '-nan', '1.#IND', '1.#QNAN',
+                             '<NA>', 'N/A', 'NA', 'NULL', 'NaN', 'None',
+                             'n/a', 'nan', 'null']
+                ) WITH ORDINALITY
+                GROUP BY {", ".join(columns)}
+            """, [str(raw_path)])
 
-    K = 4
-    RANDOM_STATE = 42
-    mini_kmeans = MiniBatchKMeans(n_clusters=K, batch_size=2048, random_state=RANDOM_STATE, n_init=10)
-    mini_kmeans.fit(X_scaled)
+            raw_rows, deduplicated_rows, missing_sessions, clean_rows = con.execute("""
+                SELECT SUM(source_copies), COUNT(*),
+                       COUNT(*) FILTER (WHERE user_session IS NULL),
+                       COUNT(*) FILTER (WHERE user_session IS NOT NULL)
+                FROM deduplicated_events
+            """).fetchone()
+            duplicate_rows = raw_rows - deduplicated_rows
+            print(
+                "  Event rows: "
+                f"raw={raw_rows:,}, after global drop_duplicates={deduplicated_rows:,}, "
+                f"duplicates removed={duplicate_rows:,}, missing sessions removed="
+                f"{missing_sessions:,}, cleaned={clean_rows:,}"
+            )
 
-    session_features["cluster"] = mini_kmeans.predict(X_scaled)
+            print("  Aggregating session features …")
+            session_features = con.execute("""
+                SELECT
+                    user_session,
+                    COUNT(DISTINCT product_id) AS unique_products_viewed,
+                    COUNT(DISTINCT category_id) AS unique_categories_viewed,
+                    SUM(CASE WHEN event_type = 'view' THEN 1 ELSE 0 END) AS total_views,
+                    SUM(CASE WHEN event_type = 'cart' THEN 1 ELSE 0 END) AS cart_additions,
+                    COUNT(DISTINCT CASE WHEN event_type = 'cart' THEN product_id END)
+                        AS unique_products_carted,
+                    AVG(CASE WHEN event_type = 'view' THEN price END) AS avg_price_viewed,
+                    MAX(CASE WHEN event_type = 'view' THEN price END) AS max_price_viewed,
+                    DATE_DIFF(
+                        'microseconds',
+                        MIN(TRY_CAST(event_time AS TIMESTAMP)),
+                        MAX(TRY_CAST(event_time AS TIMESTAMP))
+                    ) / 60000000.0 AS session_duration_minutes
+                FROM deduplicated_events
+                WHERE user_session IS NOT NULL
+                GROUP BY user_session
+                ORDER BY MIN(source_order)
+            """).fetchdf()
+            con.close()
 
-    cluster_profile = (
-        session_features
-        .groupby("cluster")[cluster_features]
-        .mean()
-        .round(2)
-    )
+            session_count = len(session_features)
+            print(f"  Aggregated sessions: {session_count:,} (notebook: 9,244,421)")
+            if session_count == 0:
+                raise ValueError("No sessions remain after clustering preprocessing.")
 
-    cluster_sizes = session_features["cluster"].value_counts().sort_index()
-    cluster_pct = (
-        session_features["cluster"].value_counts(normalize=True).sort_index().mul(100)
-    )
-    cluster_summary = pd.DataFrame({"Sessions": cluster_sizes, "Percentage (%)": cluster_pct.round(2)})
+            X_cluster = (
+                session_features[cluster_features]
+                .replace([np.inf, -np.inf], np.nan)
+                .fillna(0)
+            )
 
-    joblib.dump(scaler, MODELS_DIR / "clustering_scaler.pkl")
-    joblib.dump(mini_kmeans, MODELS_DIR / "clustering_model.pkl")
-    joblib.dump(cluster_profile, MODELS_DIR / "cluster_profile.pkl")
-    joblib.dump(cluster_summary, MODELS_DIR / "cluster_summary.pkl")
+            print("  Fitting scaler and training MiniBatchKMeans …")
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X_cluster)
 
-    print("  [OK] Clustering artifacts saved.")
-    print(f"  Notebook cluster sizes for comparison: 0=1,431,933, 1=6,770,409, 2=486,228, 3=555,851")
-    print(f"  Generated cluster sizes: {cluster_sizes.to_dict()}")
+            K = 4
+            RANDOM_STATE = 42
+            mini_kmeans = MiniBatchKMeans(
+                n_clusters=K, batch_size=2048, random_state=RANDOM_STATE, n_init=10
+            )
+            mini_kmeans.fit(X_scaled)
+
+            session_features["cluster"] = mini_kmeans.labels_
+            cluster_profile = (
+                session_features.groupby("cluster")[cluster_features].mean().round(2)
+            )
+            cluster_sizes = session_features["cluster"].value_counts().sort_index()
+            cluster_pct = (
+                session_features["cluster"].value_counts(normalize=True)
+                .sort_index().mul(100)
+            )
+            cluster_summary = pd.DataFrame({
+                "Sessions": cluster_sizes,
+                "Percentage (%)": cluster_pct.round(2),
+            })
+
+            if (
+                len(cluster_features) != mini_kmeans.n_features_in_
+                or cluster_sizes.sum() != session_count
+                or not np.isfinite(X_scaled).all()
+            ):
+                raise ValueError("Clustering candidate failed feature or session-count validation.")
+
+            artifacts = {
+                "clustering_scaler.pkl": scaler,
+                "clustering_model.pkl": mini_kmeans,
+                "cluster_profile.pkl": cluster_profile,
+                "cluster_summary.pkl": cluster_summary,
+            }
+            for name, artifact in artifacts.items():
+                joblib.dump(artifact, candidate_dir / name)
+
+            validated = {
+                name: joblib.load(candidate_dir / name)
+                for name in artifacts
+            }
+            probe = validated["clustering_scaler.pkl"].transform(X_cluster.iloc[:5])
+            predictions = validated["clustering_model.pkl"].predict(probe)
+            if (
+                validated["clustering_model.pkl"].n_clusters != K
+                or validated["clustering_model.pkl"].n_features_in_ != len(cluster_features)
+                or len(predictions) != min(5, session_count)
+                or not set(predictions).issubset(set(range(K)))
+                or int(validated["cluster_summary.pkl"]["Sessions"].sum()) != session_count
+                or not validated["cluster_profile.pkl"].index.equals(cluster_profile.index)
+            ):
+                raise ValueError("Clustering candidate artifacts failed reload/prediction validation.")
+
+            documented_sizes = {
+                0: 1431933, 1: 6770409, 2: 486228, 3: 555851,
+            }
+            print(f"  Notebook cluster sizes for comparison: {documented_sizes}")
+            print(f"  Generated cluster sizes (unmodified model labels): {cluster_sizes.to_dict()}")
+            for name in artifacts:
+                os.replace(candidate_dir / name, MODELS_DIR / name)
+            print("  [OK] Validated clustering artifacts saved.")
+        finally:
+            if con is not None:
+                con.close()
+            shutil.rmtree(candidate_dir)
 
 
 if __name__ == "__main__":

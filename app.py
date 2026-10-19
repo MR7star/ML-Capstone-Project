@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import joblib
 from pathlib import Path
 
@@ -20,298 +19,467 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-html, body, [class*="css"], [class*="st-"] {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: #303247;
+:root {
+    /* Palette */
+    --app-bg: #F7F6FC;
+    --app-sidebar: #E5EAF8;
+    --app-surface: #FFFFFF;
+    --app-border: #E6E4EF;
+    --app-border-strong: #D8D6E5;
+    --app-accent: #8B83C9;
+    --app-accent-hover: #7b73b8;
+    --app-blue: #A9B9E8;
+    --app-sage: #A8C9B5;
+    --app-peach: #E8B9A8;
+    --app-text: #303247;
+    --app-text-2: #626478;
+
+    /* Radii */
+    --app-radius-sm: 8px;
+    --app-radius-md: 10px;
+    --app-radius-lg: 12px;
+    --app-radius-pill: 999px;
+
+    /* Shadows */
+    --app-shadow-sm: 0 1px 3px rgba(48, 50, 71, 0.03);
+    --app-shadow-accent: 0 2px 8px rgba(139, 131, 201, 0.08);
+
+    /* Spacing */
+    --app-space-1: 0.25rem;
+    --app-space-2: 0.5rem;
+    --app-space-3: 0.75rem;
+    --app-space-4: 1rem;
+    --app-space-5: 1.25rem;
+    --app-space-6: 1.5rem;
+    --app-space-8: 2rem;
+
+    /* Typography */
+    --app-fs-xs: 0.75rem;
+    --app-fs-sm: 0.82rem;
+    --app-fs-base: 0.9rem;
+    --app-fs-md: 1rem;
+    --app-fs-lg: 1.15rem;
+    --app-fs-xl: 1.85rem;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
 .stApp {
-    background-color: #F7F6FC;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--app-text);
+    background-color: var(--app-bg);
+}
+
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
+    color: var(--app-text);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
+}
+
+.stApp [data-testid="stMainBlockContainer"] {
+    width: 100%;
+    max-width: 1440px;
+    padding: 2rem clamp(1rem, 3vw, 2.5rem) 3rem;
 }
 
 [data-testid="stSidebar"] {
-    background-color: #E5EAF8;
-    border-right: 1px solid #E6E4EF;
+    background-color: var(--app-sidebar);
+    border-right: 1px solid var(--app-border);
 }
 
-[data-testid="stSidebar"] div[role="radiogroup"] > label {
+.stApp [data-testid="stSidebar"] div[role="radiogroup"] > label {
     padding: 0.45rem 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--app-radius-sm);
     transition: background-color 0.15s ease, color 0.15s ease;
-    margin-bottom: 2px;
+    margin: 0 0 0.2rem;
     cursor: pointer;
+    line-height: 1.4;
 }
 
-[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+.stApp [data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
     background-color: rgba(139, 131, 201, 0.12);
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: #303247;
-    font-weight: 600;
-    letter-spacing: -0.015em;
+.stApp [data-testid="stSidebar"] div[role="radiogroup"] > label:focus-within {
+    outline: 2px solid var(--app-accent);
+    outline-offset: 1px;
 }
 
-p, span, label {
-    color: #303247;
+.stApp [data-testid="stMarkdownContainer"] p {
+    line-height: 1.55;
 }
 
-.custom-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E6E4EF;
-    border-radius: 12px;
+.stApp .custom-card,
+.stApp .metric-card,
+.stApp .hero-card,
+.stApp .cluster-card,
+.stApp .result-card {
+    background-color: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-lg);
+    box-shadow: var(--app-shadow-sm);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.stApp .custom-card {
     padding: 1.35rem 1.5rem;
-    box-shadow: 0 1px 3px rgba(48, 50, 71, 0.03);
-    margin-bottom: 1rem;
+    margin-bottom: var(--app-space-4);
 }
 
-.metric-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E6E4EF;
-    border-radius: 10px;
-    padding: 1.1rem 0.85rem;
+.stApp .metric-card {
+    border-radius: var(--app-radius-lg);
+    padding: var(--app-space-4) 0.85rem;
     text-align: center;
-    box-shadow: 0 1px 3px rgba(48, 50, 71, 0.03);
-    min-height: 96px;
+    min-height: 108px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 0.35rem;
 }
 
-.metric-card .value {
-    font-size: 1.5rem;
+.stApp .metric-card .value {
+    font-size: clamp(1.15rem, 2vw, 1.5rem);
     font-weight: 700;
-    color: #8B83C9;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--app-accent);
+    line-height: 1.3;
+    white-space: normal;
+    overflow-wrap: anywhere;
     max-width: 100%;
 }
 
-.metric-card .label {
-    font-size: 0.78rem;
+.stApp .metric-card .label {
+    font-size: var(--app-fs-sm);
     font-weight: 500;
-    color: #73758A;
-    margin-top: 5px;
-    line-height: 1.3;
+    color: var(--app-text-2);
+    line-height: 1.4;
+    width: 100%;
 }
 
-.hero-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E6E4EF;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 1px 4px rgba(48, 50, 71, 0.03);
+.stApp .hero-card {
+    padding: 1.35rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 100%;
-    min-height: 280px;
+    min-height: 17rem;
+    height: calc(100% - 0.75rem);
     margin-bottom: 0.75rem;
+    gap: 1rem;
 }
 
-.hero-card h3 {
-    font-size: 1.15rem;
+.stApp .hero-card h3 {
+    font-size: var(--app-fs-lg);
     margin: 0.45rem 0 0.35rem;
-    color: #303247;
+    color: var(--app-text);
 }
 
-.hero-card p {
-    color: #73758A;
+.stApp .hero-card p {
+    color: var(--app-text-2);
     font-size: 0.88rem;
     line-height: 1.55;
-    margin-bottom: 0.4rem;
+    margin: 0 0 0.4rem;
 }
 
-.cluster-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E6E4EF;
-    border-radius: 12px;
-    padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(48, 50, 71, 0.03);
+.stApp .cluster-card {
+    padding: var(--app-space-5);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 100%;
-    min-height: 200px;
-    margin-bottom: 0.75rem;
+    min-height: 13rem;
+    height: calc(100% - 0.75rem);
+    margin-bottom: var(--app-space-3);
+    gap: var(--app-space-4);
 }
 
-.cluster-card h4 {
+.stApp .cluster-card h4 {
     margin: 0.45rem 0 0.3rem;
-    font-size: 1rem;
-    color: #303247;
+    font-size: var(--app-fs-md);
+    color: var(--app-text);
 }
 
-.cluster-card p {
-    font-size: 0.83rem;
-    color: #73758A;
+.stApp .cluster-card p {
+    font-size: 0.85rem;
+    color: var(--app-text-2);
     line-height: 1.5;
     margin: 0;
 }
 
-.badge {
+.stApp .badge {
     display: inline-block;
     padding: 0.2rem 0.6rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    border-radius: var(--app-radius-pill);
+    font-size: var(--app-fs-xs);
     font-weight: 600;
     letter-spacing: 0.02em;
     width: fit-content;
+    line-height: 1.4;
 }
 
-.badge-regression {
+.stApp .badge-regression {
     background-color: rgba(169, 185, 232, 0.3);
     color: #40507a;
 }
 
-.badge-classification {
+.stApp .badge-classification {
     background-color: rgba(168, 201, 181, 0.35);
     color: #2b553e;
 }
 
-.badge-clustering {
+.stApp .badge-clustering {
     background-color: rgba(232, 185, 168, 0.45);
     color: #7b4231;
 }
 
-.badge-accent {
+.stApp .badge-accent {
     background-color: rgba(139, 131, 201, 0.25);
     color: #554d8a;
 }
 
-.section-header {
-    font-size: 1rem;
+.stApp .section-header {
+    font-size: var(--app-fs-md);
     font-weight: 600;
-    color: #303247;
-    border-left: 3px solid #8B83C9;
+    color: var(--app-text);
+    border-left: 3px solid var(--app-accent);
     padding-left: 0.65rem;
-    margin: 1.35rem 0 0.85rem;
+    margin: 1.5rem 0 0.85rem;
     line-height: 1.35;
 }
 
-.result-card {
-    background-color: #FFFFFF;
-    border: 1.5px solid #8B83C9;
-    border-radius: 12px;
-    padding: 1.5rem 2rem;
+.stApp .result-card {
+    border: 1.5px solid var(--app-accent);
+    padding: var(--app-space-6) var(--app-space-8);
     text-align: center;
-    box-shadow: 0 2px 8px rgba(139, 131, 201, 0.08);
-    margin: 1.25rem 0;
+    box-shadow: var(--app-shadow-accent);
+    margin: var(--app-space-5) 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.25rem;
 }
 
-.result-card.success {
+.stApp .result-card.success {
     background-color: rgba(168, 201, 181, 0.18);
-    border-color: #A8C9B5;
+    border-color: var(--app-sage);
 }
 
-.result-card.warning {
+.stApp .result-card.warning {
     background-color: rgba(232, 185, 168, 0.22);
-    border-color: #E8B9A8;
+    border-color: var(--app-peach);
 }
 
-.result-card .res-label {
-    font-size: 0.82rem;
+.stApp .result-card .res-label {
+    font-size: var(--app-fs-sm);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #73758A;
+    color: var(--app-text-2);
 }
 
-.result-card .res-value {
-    font-size: 2.15rem;
+.stApp .result-card .res-value {
+    font-size: clamp(1.55rem, 4vw, 2.15rem);
     font-weight: 700;
-    color: #303247;
+    color: var(--app-text);
     margin: 0.35rem 0;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
 }
 
-.result-card.success .res-value {
+.stApp .result-card.success .res-value {
     color: #28573d;
 }
 
-.result-card.warning .res-value {
+.stApp .result-card.warning .res-value {
     color: #8c4633;
 }
 
-.result-card .res-desc {
+.stApp .result-card .res-desc {
     font-size: 0.88rem;
-    color: #73758A;
-    margin-top: 0.35rem;
+    color: var(--app-text-2);
+    margin-top: 0.1rem;
+    line-height: 1.5;
 }
 
-.pastel-notice {
+.stApp .pastel-notice {
     background-color: rgba(232, 185, 168, 0.12);
     border: 1px solid rgba(232, 185, 168, 0.4);
-    border-radius: 8px;
+    border-radius: var(--app-radius-md);
     padding: 0.85rem 1.15rem;
-    color: #73758A;
+    color: var(--app-text-2);
     margin: 0.5rem 0 1.5rem 0;
-    line-height: 1.45;
+    line-height: 1.55;
     font-size: 0.85rem;
+    overflow-wrap: anywhere;
 }
 
-.pastel-notice b {
-    color: #303247;
+.stApp .pastel-notice b {
+    color: var(--app-text);
     font-weight: 600;
 }
 
-.pastel-notice code {
+.stApp .pastel-notice code {
     background-color: rgba(255, 255, 255, 0.8);
     color: #8c4633;
     padding: 0.12rem 0.4rem;
     border-radius: 4px;
     border: 1px solid rgba(232, 185, 168, 0.3);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 500;
+    overflow-wrap: anywhere;
 }
 
-.stButton > button {
-    border-radius: 8px;
+.stApp [data-testid="stButton"] > button,
+.stApp [data-testid="stFormSubmitButton"] > button {
+    min-height: 2.65rem;
+    width: 100%;
+    border-radius: var(--app-radius-md);
     font-weight: 500;
-    border: 1px solid #E6E4EF;
-    background-color: #FFFFFF;
+    border: 1px solid var(--app-border);
+    background-color: var(--app-surface);
+    color: var(--app-text);
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    padding: 0.55rem 1rem;
+    white-space: normal;
+    line-height: 1.35;
+}
+
+.stApp [data-testid="stButton"] > button:focus-visible,
+.stApp [data-testid="stFormSubmitButton"] > button:focus-visible {
+    outline: 2px solid var(--app-accent);
+    outline-offset: 2px;
+}
+
+.stApp [data-testid="stButton"] > button:hover {
+    border-color: var(--app-accent);
+    color: var(--app-accent);
+    background-color: var(--app-bg);
+}
+
+.stApp [data-testid="stFormSubmitButton"] > button,
+.stApp [data-testid="stButton"] > button[kind="primary"] {
+    background-color: var(--app-accent);
+    color: #FFFFFF;
+    border: 1px solid var(--app-accent);
+    font-weight: 600;
+    border-radius: var(--app-radius-md);
+}
+
+.stApp [data-testid="stFormSubmitButton"] > button:hover,
+.stApp [data-testid="stButton"] > button[kind="primary"]:hover {
+    background-color: var(--app-accent-hover);
+    border-color: var(--app-accent-hover);
+    color: #FFFFFF;
+}
+
+.stApp [data-testid="stForm"] {
+    background-color: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-lg);
+    padding: 1.35rem;
+    box-shadow: var(--app-shadow-sm);
+}
+
+.stApp [data-baseweb="input"] > div,
+.stApp [data-baseweb="select"] > div {
+    border-radius: var(--app-radius-sm);
+    border-color: var(--app-border-strong);
+}
+
+.stApp [data-baseweb="input"]:focus-within > div,
+.stApp [data-baseweb="select"]:focus-within > div {
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 1px var(--app-accent);
+}
+
+.stApp [data-testid="stDataFrame"],
+.stApp [data-testid="stTable"] {
+    max-width: 100%;
+    border: 1px solid var(--app-border);
+    border-radius: var(--app-radius-lg);
+}
+
+.stApp [data-testid="stTabs"] [role="tablist"] {
+    gap: 0.4rem;
+    overflow-x: auto;
+}
+
+.stApp [data-testid="stMarkdownContainer"] table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.stApp [data-testid="stMarkdownContainer"] th,
+.stApp [data-testid="stMarkdownContainer"] td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #E6E4EF;
+    text-align: left;
+    vertical-align: top;
+}
+
+.stApp [data-testid="stMarkdownContainer"] th {
+    font-weight: 600;
     color: #303247;
-    transition: all 0.15s ease;
-    padding: 0.5rem 1rem;
 }
 
-.stButton > button:hover {
-    border-color: #8B83C9;
-    color: #8B83C9;
-    background-color: #F7F6FC;
+.stApp hr {
+    border-color: #E6E4EF;
+    margin: 1.25rem 0;
 }
 
-button[kind="primary"], div.stFormSubmitButton > button {
-    background-color: #8B83C9 !important;
-    color: #FFFFFF !important;
-    border: 1px solid #8B83C9 !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
-    padding: 0.55rem 1rem !important;
+.stApp .home-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
 }
 
-button[kind="primary"]:hover, div.stFormSubmitButton > button:hover {
-    background-color: #7b73b8 !important;
-    border-color: #7b73b8 !important;
-    color: #FFFFFF !important;
+@media (max-width: 900px) {
+    .stApp [data-testid="stMainBlockContainer"] {
+        padding: 1.5rem 1.25rem 2.5rem;
+    }
+
+    .stApp .home-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
 }
 
-[data-testid="stForm"] {
-    background-color: #FFFFFF;
-    border: 1px solid #E6E4EF;
-    border-radius: 12px;
-    padding: 1.5rem;
-}
+@media (max-width: 560px) {
+    .stApp [data-testid="stMainBlockContainer"] {
+        padding: 1.1rem 0.85rem 2rem;
+    }
 
-hr {
-    border-color: #E6E4EF !important;
-    margin: 1.25rem 0 !important;
+    .stApp .home-metrics {
+        gap: 0.65rem;
+    }
+
+    .stApp .custom-card,
+    .stApp .hero-card,
+    .stApp .cluster-card,
+    .stApp .result-card,
+    .stApp [data-testid="stForm"] {
+        padding: 1rem;
+    }
+
+    .stApp .hero-card,
+    .stApp .cluster-card {
+        min-height: 0;
+    }
+
+    .stApp .result-card .res-value {
+        font-size: clamp(1.35rem, 7vw, 1.8rem);
+    }
+
+    .stApp [data-testid="stMarkdownContainer"] table {
+        display: block;
+        overflow-x: auto;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -325,15 +493,15 @@ def configure_matplotlib_theme():
         'axes.edgecolor': '#E6E4EF',
         'axes.linewidth': 1.0,
         'axes.labelcolor': '#303247',
-        'axes.labelsize': 9.5,
-        'axes.titlesize': 10.5,
+        'axes.labelsize': 10,
+        'axes.titlesize': 11,
         'axes.titleweight': 'bold',
         'axes.titlecolor': '#303247',
         'axes.titlepad': 10,
-        'xtick.color': '#73758A',
-        'ytick.color': '#73758A',
-        'xtick.labelsize': 8.5,
-        'ytick.labelsize': 8.5,
+        'xtick.color': '#626478',
+        'ytick.color': '#626478',
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
         'grid.color': '#F2F1F8',
         'grid.linewidth': 0.8,
         'grid.alpha': 0.8,
@@ -346,7 +514,7 @@ def render_page_header(title: str, subtitle: str):
     st.markdown(
         f'<div style="margin-bottom: 0.5rem;">'
         f'<h1 style="margin: 0 0 0.35rem 0; font-size: 1.85rem; font-weight: 700; color: #303247; letter-spacing: -0.02em;">{title}</h1>'
-        f'<p style="margin: 0; color: #73758A; font-size: 0.95rem; line-height: 1.5;">{subtitle}</p>'
+        f'<p style="margin: 0; color: #626478; font-size: 0.95rem; line-height: 1.5;">{subtitle}</p>'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -442,7 +610,7 @@ if page == "Home":
             </div>
             <p style="margin-top:0.75rem;padding-top:0.5rem;border-top:1px solid #E6E4EF;">
                 <b>Model:</b> Tuned Random Forest<br>
-                <span style="color:#73758A;">R&sup2; Score: <b>0.892</b> &bull; RMSE: <b>&pound;3,940</b></span>
+                <span style="color:#626478;">R&sup2; Score: <b>0.892</b> &bull; RMSE: <b>&pound;3,940</b></span>
             </p>
         </div>""", unsafe_allow_html=True)
         st.button("Explore Regression →", key="btn_reg", width='stretch',
@@ -457,7 +625,7 @@ if page == "Home":
             </div>
             <p style="margin-top:0.75rem;padding-top:0.5rem;border-top:1px solid #E6E4EF;">
                 <b>Model:</b> SVM (RBF, C=10)<br>
-                <span style="color:#73758A;">Weighted F1: <b>0.883</b> &bull; ROC-AUC: <b>0.863</b></span>
+                <span style="color:#626478;">Weighted F1: <b>0.883</b> &bull; ROC-AUC: <b>0.863</b></span>
             </p>
         </div>""", unsafe_allow_html=True)
         st.button("Explore Classification →", key="btn_clf", width='stretch',
@@ -472,26 +640,30 @@ if page == "Home":
             </div>
             <p style="margin-top:0.75rem;padding-top:0.5rem;border-top:1px solid #E6E4EF;">
                 <b>Model:</b> MiniBatch K-Means (K=4)<br>
-                <span style="color:#73758A;">Silhouette: <b>0.542</b> &bull; Calinski-H: <b>15,991</b></span>
+                <span style="color:#626478;">Silhouette: <b>0.542</b> &bull; Calinski-H: <b>15,991</b></span>
             </p>
         </div>""", unsafe_allow_html=True)
         st.button("Explore Clustering →", key="btn_clust", width='stretch',
                   on_click=go_to, args=("Clustering",))
 
     st.markdown('<p class="section-header">Verified Model Performance Highlights</p>', unsafe_allow_html=True)
-    c1, c2, c3, c4, c5, c6 = st.columns(6, gap="small")
-    for col, val, lbl in [
-        (c1, "0.892", "Regression R²"),
-        (c2, "£3,940", "Regression RMSE"),
-        (c3, "89.0%", "Classifier Accuracy"),
-        (c4, "0.883", "Classifier F1"),
-        (c5, "0.863", "Classifier AUC"),
-        (c6, "0.542", "Cluster Silhouette (K=4)"),
-    ]:
-        col.markdown(
-            f'<div class="metric-card"><div class="value">{val}</div><div class="label">{lbl}</div></div>',
-            unsafe_allow_html=True,
-        )
+    home_metrics = [
+        ("0.892", "Regression R²"),
+        ("£3,940", "Regression RMSE"),
+        ("89.0%", "Classifier Accuracy"),
+        ("0.883", "Classifier F1"),
+        ("0.863", "Classifier AUC"),
+        ("0.542", "Cluster Silhouette (K=4)"),
+    ]
+    home_metric_cards = "".join(
+        f'<div class="metric-card"><div class="value">{value}</div>'
+        f'<div class="label">{label}</div></div>'
+        for value, label in home_metrics
+    )
+    st.markdown(
+        f'<div class="home-metrics">{home_metric_cards}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 # ════════════════════ REGRESSION ═════════════════════════════════════════════
@@ -756,52 +928,66 @@ elif page == "Clustering":
 
     scaler, km_model, cluster_profile, cluster_summary = load_clustering_artifacts()
 
+    def cluster_value(cluster_id, feature, fallback):
+        if cluster_profile is not None:
+            if cluster_id not in cluster_profile.index:
+                return 0.0
+            return float(cluster_profile.loc[cluster_id, feature])
+        return fallback
+
+    def cluster_percentage(cluster_id, fallback):
+        if cluster_summary is not None:
+            if cluster_id not in cluster_summary.index:
+                return 0.0
+            return float(cluster_summary.loc[cluster_id, "Percentage (%)"])
+        return fallback
+
     st.markdown('<p class="section-header">Identified E-Commerce Session Segments</p>', unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns(4, gap="medium")
     with c1:
-        st.markdown("""<div class="cluster-card" style="border-top:3.5px solid #8B83C9;">
+        st.markdown(f"""<div class="cluster-card" style="border-top:3.5px solid #8B83C9;">
             <div>
-                <span class="badge badge-accent">CLUSTER 0 &bull; 15.5%</span>
+                <span class="badge badge-accent">CLUSTER 0 &bull; {cluster_percentage(0, 15.49):.1f}%</span>
                 <h4>High-Value Browsers</h4>
-                <p>High viewed item prices (&pound;963 avg), 3.6 views, zero carts. Luxury / high-ticket interest without immediate commitment.</p>
+                <p>High viewed item prices (&pound;{cluster_value(0, "avg_price_viewed", 963.20):,.2f} avg), {cluster_value(0, "total_views", 3.62):.1f} views, {cluster_value(0, "cart_additions", 0.0):.2f} carts. Luxury / high-ticket interest without immediate commitment.</p>
             </div>
-            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.78rem;color:#73758A;">
+            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.82rem;color:#626478;">
                 <b>Focus:</b> Premium Window Shopping
             </p>
         </div>""", unsafe_allow_html=True)
 
     with c2:
-        st.markdown("""<div class="cluster-card" style="border-top:3.5px solid #A9B9E8;">
+        st.markdown(f"""<div class="cluster-card" style="border-top:3.5px solid #A9B9E8;">
             <div>
-                <span class="badge badge-regression">CLUSTER 1 &bull; 73.2%</span>
+                <span class="badge badge-regression">CLUSTER 1 &bull; {cluster_percentage(1, 73.24):.1f}%</span>
                 <h4>Casual Browsers</h4>
-                <p>Low price viewed (&pound;181 avg), ~3 page views, zero carts. Represents standard fast window shoppers.</p>
+                <p>Low price viewed (&pound;{cluster_value(1, "avg_price_viewed", 180.54):,.2f} avg), ~{cluster_value(1, "total_views", 3.14):.1f} page views, {cluster_value(1, "cart_additions", 0.0):.2f} carts. Represents standard fast window shoppers.</p>
             </div>
-            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.78rem;color:#73758A;">
+            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.82rem;color:#626478;">
                 <b>Focus:</b> Quick Casual Visits
             </p>
         </div>""", unsafe_allow_html=True)
 
     with c3:
-        st.markdown("""<div class="cluster-card" style="border-top:3.5px solid #A8C9B5;">
+        st.markdown(f"""<div class="cluster-card" style="border-top:3.5px solid #A8C9B5;">
             <div>
-                <span class="badge badge-classification">CLUSTER 2 &bull; 5.3%</span>
+                <span class="badge badge-classification">CLUSTER 2 &bull; {cluster_percentage(2, 5.26):.1f}%</span>
                 <h4>Catalog Researchers</h4>
-                <p>Extensive depth (15.6 unique SKUs, 23.4 views, 37.4 min duration). High comparative research before buying.</p>
+                <p>Extensive depth ({cluster_value(2, "unique_products_viewed", 15.59):.2f} unique SKUs, {cluster_value(2, "total_views", 23.42):.2f} views, {cluster_value(2, "session_duration_minutes", 37.43):.2f} min duration). Suggests comparative product research.</p>
             </div>
-            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.78rem;color:#73758A;">
+            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.82rem;color:#626478;">
                 <b>Focus:</b> Deep In-Catalog Evaluation
             </p>
         </div>""", unsafe_allow_html=True)
 
     with c4:
-        st.markdown("""<div class="cluster-card" style="border-top:3.5px solid #E8B9A8;">
+        st.markdown(f"""<div class="cluster-card" style="border-top:3.5px solid #E8B9A8;">
             <div>
-                <span class="badge badge-clustering">CLUSTER 3 &bull; 6.0%</span>
+                <span class="badge badge-clustering">CLUSTER 3 &bull; {cluster_percentage(3, 6.01):.1f}%</span>
                 <h4>Carting Shoppers</h4>
-                <p>Active cart additions (1.58 avg, 1.10 unique products). High-intent shopping sessions closest to conversion.</p>
+                <p>Active cart additions ({cluster_value(3, "cart_additions", 1.58):.2f} avg, {cluster_value(3, "unique_products_carted", 1.10):.2f} unique products). Indicates comparatively stronger purchase-intent signals, not a guaranteed conversion.</p>
             </div>
-            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.78rem;color:#73758A;">
+            <p style="margin-top:0.6rem;padding-top:0.4rem;border-top:1px solid #E6E4EF;font-size:0.82rem;color:#626478;">
                 <b>Focus:</b> Direct Pre-Purchase Intent
             </p>
         </div>""", unsafe_allow_html=True)
@@ -820,12 +1006,22 @@ elif page == "Clustering":
     col_a, col_b = st.columns([1, 2], gap="large")
     with col_a:
         st.markdown("<p style='font-size:0.92rem;font-weight:600;color:#303247;margin:1rem 0 0.4rem;'>Session Distribution by Cluster</p>", unsafe_allow_html=True)
-        dist_df = pd.DataFrame({
-            "Cluster": [0, 1, 2, 3],
-            "Segment": ["High-Value Browsers", "Casual Browsers", "Catalog Researchers", "Carting Shoppers"],
-            "Sessions": [1431933, 6770409, 486228, 555851],
-            "Percentage (%)": [15.49, 73.24, 5.26, 6.01]
-        })
+        if cluster_summary is not None:
+            dist_df = cluster_summary.rename_axis("Cluster").reset_index()
+            dist_df["Segment"] = dist_df["Cluster"].map({
+                0: "High-Value Browsers",
+                1: "Casual Browsers",
+                2: "Catalog Researchers",
+                3: "Carting Shoppers",
+            })
+            dist_df = dist_df[["Cluster", "Segment", "Sessions", "Percentage (%)"]]
+        else:
+            dist_df = pd.DataFrame({
+                "Cluster": [0, 1, 2, 3],
+                "Segment": ["High-Value Browsers", "Casual Browsers", "Catalog Researchers", "Carting Shoppers"],
+                "Sessions": [1431933, 6770409, 486228, 555851],
+                "Percentage (%)": [15.49, 73.24, 5.26, 6.01]
+            })
         st.dataframe(
             dist_df.style.format({"Sessions": "{:,.0f}", "Percentage (%)": "{:.2f}%"}),
             width='stretch', hide_index=True
@@ -833,16 +1029,30 @@ elif page == "Clustering":
 
     with col_b:
         st.markdown("<p style='font-size:0.92rem;font-weight:600;color:#303247;margin:1rem 0 0.4rem;'>Cluster Feature Averages Profile</p>", unsafe_allow_html=True)
-        prof_df = pd.DataFrame([
-            {"Cluster": 0, "Products": 2.70, "Views": 3.62, "Carts": 0.00, "Avg Price (£)": 963.20, "Duration (min)": 16.67},
-            {"Cluster": 1, "Products": 2.20, "Views": 3.14, "Carts": 0.00, "Avg Price (£)": 180.54, "Duration (min)": 16.54},
-            {"Cluster": 2, "Products": 15.59, "Views": 23.42, "Carts": 0.03, "Avg Price (£)": 232.62, "Duration (min)": 37.43},
-            {"Cluster": 3, "Products": 2.65, "Views": 5.31, "Carts": 1.58, "Avg Price (£)": 332.88, "Duration (min)": 11.62},
-        ])
+        if cluster_profile is not None:
+            prof_df = cluster_profile.rename_axis("Cluster").reset_index().rename(columns={
+                "unique_products_viewed": "Products",
+                "unique_categories_viewed": "Categories",
+                "total_views": "Views",
+                "cart_additions": "Carts",
+                "unique_products_carted": "Products Carted",
+                "avg_price_viewed": "Avg Price (£)",
+                "max_price_viewed": "Max Price (£)",
+                "session_duration_minutes": "Duration (min)",
+            })
+        else:
+            prof_df = pd.DataFrame([
+                {"Cluster": 0, "Products": 2.70, "Categories": 1.22, "Views": 3.62, "Carts": 0.00, "Products Carted": 0.00, "Avg Price (£)": 963.20, "Max Price (£)": 1221.72, "Duration (min)": 16.67},
+                {"Cluster": 1, "Products": 2.20, "Categories": 1.20, "Views": 3.14, "Carts": 0.00, "Products Carted": 0.00, "Avg Price (£)": 180.54, "Max Price (£)": 217.25, "Duration (min)": 16.54},
+                {"Cluster": 2, "Products": 15.59, "Categories": 3.93, "Views": 23.42, "Carts": 0.03, "Products Carted": 0.03, "Avg Price (£)": 232.62, "Max Price (£)": 683.06, "Duration (min)": 37.43},
+                {"Cluster": 3, "Products": 2.65, "Categories": 1.23, "Views": 5.31, "Carts": 1.58, "Products Carted": 1.10, "Avg Price (£)": 332.88, "Max Price (£)": 414.66, "Duration (min)": 11.62},
+            ])
         st.dataframe(
             prof_df.style.format({
-                "Products": "{:.2f}", "Views": "{:.2f}", "Carts": "{:.2f}",
-                "Avg Price (£)": "{:,.2f}", "Duration (min)": "{:.2f}"
+                "Products": "{:.2f}", "Categories": "{:.2f}", "Views": "{:.2f}",
+                "Carts": "{:.2f}", "Products Carted": "{:.2f}",
+                "Avg Price (£)": "{:,.2f}", "Max Price (£)": "{:,.2f}",
+                "Duration (min)": "{:.2f}"
             }),
             width='stretch', hide_index=True
         )
@@ -853,21 +1063,27 @@ elif page == "Clustering":
         with st.form("cluster_form"):
             c1, c2 = st.columns(2, gap="large")
             with c1:
-                uniq_prod = c1.number_input("Unique Products Viewed", 0, 500, 3)
-                uniq_cat = c2.number_input("Unique Categories Viewed", 0, 100, 1)
-                total_views = c1.number_input("Total Page Views", 0, 1000, 4)
-                cart_add = c2.number_input("Cart Additions", 0, 200, 0)
+                uniq_prod = st.number_input("Unique Products Viewed", 0, 500, 3)
+                uniq_cat = st.number_input("Unique Categories Viewed", 0, 100, 1)
+                total_views = st.number_input("Total Page Views", 0, 1000, 4)
+                cart_add = st.number_input("Cart Additions", 0, 200, 0)
             with c2:
-                uniq_carted = c1.number_input("Unique Products Carted", 0, 200, 0)
-                avg_price = c2.number_input("Avg Price Viewed (£)", 0.0, 5000.0, 50.0, step=0.5)
-                max_price = c1.number_input("Max Price Viewed (£)", 0.0, 10000.0, 100.0, step=0.5)
-                session_dur = c2.number_input("Session Duration (minutes)", 0.0, 600.0, 5.0, step=0.5)
+                uniq_carted = st.number_input("Unique Products Carted", 0, 200, 0)
+                avg_price = st.number_input("Avg Price Viewed (£)", 0.0, 5000.0, 50.0, step=0.5)
+                max_price = st.number_input("Max Price Viewed (£)", 0.0, 10000.0, 100.0, step=0.5)
+                session_dur = st.number_input("Session Duration (minutes)", 0.0, 600.0, 5.0, step=0.5)
 
             submitted = st.form_submit_button("Assign to Cluster", width='stretch')
 
         if submitted:
-            row = np.array([[uniq_prod, uniq_cat, total_views, cart_add, uniq_carted,
-                             avg_price, max_price, session_dur]], dtype=float)
+            row = pd.DataFrame([[
+                uniq_prod, uniq_cat, total_views, cart_add, uniq_carted,
+                avg_price, max_price, session_dur,
+            ]], columns=[
+                "unique_products_viewed", "unique_categories_viewed", "total_views",
+                "cart_additions", "unique_products_carted", "avg_price_viewed",
+                "max_price_viewed", "session_duration_minutes",
+            ])
             try:
                 row_scaled = scaler.transform(row)
                 cluster_id = int(km_model.predict(row_scaled)[0])
@@ -902,7 +1118,7 @@ elif page == "Clustering":
 
     if km_model is None:
         st.markdown(
-            '<div class="error-box" style="margin-top:1.5rem;padding:0.75rem 1rem;background-color:rgba(232,185,168,0.08);border:1px solid rgba(232,185,168,0.3);border-radius:8px;font-size:0.82rem;color:#73758A;line-height:1.4;">'
+            '<div class="error-box" style="margin-top:1.5rem;padding:0.75rem 1rem;background-color:rgba(232,185,168,0.08);border:1px solid rgba(232,185,168,0.3);border-radius:8px;font-size:0.86rem;color:#626478;line-height:1.5;">'
             '<b>Note:</b> Cluster assignment feature requires model artifacts. '
             'To generate from the 5.3GB dataset, run: <code style="background-color:rgba(255,255,255,0.7);color:#8c4633;padding:0.1rem 0.35rem;border-radius:3px;border:1px solid rgba(232,185,168,0.3);font-size:0.8rem;">python export_models.py --task clustering</code>'
             '</div>',
@@ -951,7 +1167,7 @@ elif page == "Model Comparison":
         ax.set_xlabel("R² Score (Higher is Better)")
         ax.set_title("Regression Models — R² Score Comparison")
         ax.set_xlim(0.74, 0.92)
-        ax.axvline(0.85, linestyle="--", color="#73758A", linewidth=0.9, label="0.85 Benchmark")
+        ax.axvline(0.85, linestyle="--", color="#626478", linewidth=0.9, label="0.85 Benchmark")
         ax.grid(axis='x', linestyle='--', alpha=0.7)
         ax.set_axisbelow(True)
         ax.legend(loc="lower right")
@@ -1057,7 +1273,7 @@ elif page == "About":
 <div class="custom-card">
     <h3 style="margin-top:0;">Project Objectives</h3>
     <p>This capstone investigates three distinct predictive challenges in modern e-commerce using real-world transactional and behavioral data:</p>
-    <ul style="color:#73758A;font-size:0.9rem;line-height:1.65;margin-bottom:0;">
+    <ul style="color:#626478;font-size:0.92rem;line-height:1.65;margin-bottom:0;">
         <li><b>Track 1 (Regression):</b> Predict daily aggregate sales volume in GBP (£) from order frequency, SKU breadth, and calendar signals to assist inventory management.</li>
         <li><b>Track 2 (Classification):</b> Identify session conversion likelihood (Revenue = True) to enable automated real-time discount incentives without wasting margin.</li>
         <li><b>Track 3 (Clustering):</b> Segment multi-million session catalogs into actionable user groups to distinguish window browsing, deep research, and high-intent buying.</li>
@@ -1067,7 +1283,7 @@ elif page == "About":
 <div class="custom-card">
     <h3 style="margin-top:0;">Datasets & Scope</h3>
     <table style="width:100%;font-size:0.88rem;color:#303247;border-collapse:collapse;">
-        <tr style="border-bottom:1px solid #E6E4EF;text-align:left;color:#73758A;">
+        <tr style="border-bottom:1px solid #E6E4EF;text-align:left;color:#626478;">
             <th style="padding:7px 0;">Dataset</th>
             <th style="padding:7px 0;">Dimensions</th>
             <th style="padding:7px 0;">ML Domain</th>
@@ -1092,7 +1308,7 @@ elif page == "About":
 
 <div class="custom-card">
     <h3 style="margin-top:0;">Data Preprocessing & Leakage Prevention</h3>
-    <p style="font-size:0.88rem;color:#73758A;line-height:1.65;margin:0;">
+    <p style="font-size:0.92rem;color:#626478;line-height:1.65;margin:0;">
         <b>Zero Data Leakage:</b> All scaling parameters (mean, standard deviation) and categorical encoder bins are fitted strictly on the 80% training splits and subsequently applied to test sets.<br>
         <b>Outlier Clipping:</b> Interquartile Range (IQR) bounds [Q1 - 1.5&times;IQR, Q3 + 1.5&times;IQR] are derived from training features to stabilize regressor performance against extreme order spikes.<br>
         <b>Feature Engineering:</b> 4 interaction metrics created for classification: <i>Total_Pages_Visited</i>, <i>Total_Duration</i>, <i>Avg_Duration_Per_Page</i>, and <i>Exit_to_Bounce_Ratio</i>.
@@ -1104,7 +1320,7 @@ elif page == "About":
         st.markdown("""
 <div class="custom-card">
     <h3 style="margin-top:0;">Environment</h3>
-    <p style="font-size:0.88rem;color:#73758A;line-height:1.75;margin:0;">
+    <p style="font-size:0.92rem;color:#626478;line-height:1.75;margin:0;">
         &bull; <b>Python:</b> 3.12<br>
         &bull; <b>Streamlit:</b> 1.65+<br>
         &bull; <b>scikit-learn:</b> 1.8<br>

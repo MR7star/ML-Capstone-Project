@@ -194,6 +194,7 @@ jupyter notebook
 2. **`notebooks/classification.ipynb`**: Trains 10 classification algorithms across Part A and Part B, generating confusion matrices and ROC-AUC metrics.
 3. **`notebooks/clustering.ipynb`**: Fits K-Means and Agglomerative Clustering, generating Elbow curves, Dendrograms, and PCA/t-SNE cluster plots.
 
+<<<<<<< HEAD
 To export the clustering artifacts from `data/raw/2019-Oct.csv`, run:
 
 ```bash
@@ -202,6 +203,8 @@ python export_models.py --task clustering
 
 The exporter uses DuckDB for full-dataset duplicate removal and session aggregation, prints row counts for the preprocessing stages, and reports generated cluster sizes against the notebook values. It stages and reload-tests all four artifacts, including a prediction probe, before replacing the existing clustering files; the raw CSV is not loaded into pandas.
 
+=======
+>>>>>>> agg-cluster
 ### 3. Web Interface / Bonus Deployment (Optional)
 
 Launch the interactive web GUI:
@@ -217,3 +220,7 @@ streamlit run app/main.py
 
 * All analytical interpretations, EDA insights, and feature engineering strategies were designed and implemented by the team members.
 * Generative AI tools were utilized strictly for code scaffolding, layout structuring, and documentation formatting assistance.
+<<<<<<< HEAD
+=======
+
+>>>>>>> agg-cluster

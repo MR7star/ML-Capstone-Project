@@ -7,3 +7,4 @@ seaborn==0.13.2
 joblib==1.5.2
 gdown
 duckdb
+ipython

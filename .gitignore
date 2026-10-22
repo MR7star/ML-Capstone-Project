@@ -29,15 +29,7 @@ Thumbs.db
 *.joblib
 
 # Temporary files
-<<<<<<< HEAD
-*.tmpdata/raw/2019-Oct.csv
-
-data/raw/2019-Oct.csv
-
-data/raw/
-
-data/temp_session_features.parquet
-=======
 *.tmp
+
+# Dataset files
 data/
->>>>>>> agg-cluster

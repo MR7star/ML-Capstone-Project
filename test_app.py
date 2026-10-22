@@ -66,6 +66,21 @@ def test_clustering_page_loads_artifacts_and_assigns_session():
     assert any("Assigned Cluster" in m.value for m in at.markdown)
 
 
+def test_clustering_page_agglomerative_selector():
+    at = AppTest.from_file(APP_FILE, default_timeout=30)
+    at.run()
+    at.radio(key="nav_radio").set_value("Clustering").run()
+    assert not at.exception
+    radio_selectors = [r for r in at.radio if r.key == "clustering_algo_selector"]
+    assert len(radio_selectors) == 1
+    algo_radio = radio_selectors[0]
+    assert "MiniBatch K-Means" in algo_radio.options
+    assert "Agglomerative Hierarchical Clustering" in algo_radio.options
+    algo_radio.set_value("Agglomerative Hierarchical Clustering").run()
+    assert not at.exception
+    assert any("Agglomerative Clustering artifacts not found" in m.value or "Model Overview" in m.value for m in at.markdown)
+
+
 def test_model_comparison_page():
     at = AppTest.from_file(APP_FILE, default_timeout=30)
     at.run()
@@ -88,6 +103,7 @@ if __name__ == "__main__":
     test_regression_prediction()
     test_classification_prediction()
     test_clustering_page_loads_artifacts_and_assigns_session()
+    test_clustering_page_agglomerative_selector()
     test_model_comparison_page()
     test_about_page()
     print("All test_app.py tests completed successfully!")

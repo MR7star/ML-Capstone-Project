@@ -9,7 +9,16 @@ Creates:
     models/regression_model.pkl        (Tuned Random Forest Regressor)
     models/regression_outlier_bounds.pkl
     models/classification_preprocessor.pkl  (scaler + encoder from nb_utils)
-    models/classification_model.pkl    (SVM RBF, C=10)
+    models/classification_model_logistic.pkl
+    models/classification_model_knn.pkl
+    models/classification_model_nb.pkl
+    models/classification_model_dt.pkl
+    models/classification_model_svm.pkl
+    models/classification_model_rf.pkl
+    models/classification_model_ada.pkl
+    models/classification_model_gb.pkl
+    models/classification_model_bag.pkl
+    models/classification_model_mlp.pkl
     models/clustering_scaler.pkl
     models/clustering_model.pkl        (MiniBatchKMeans, K=4)
     models/cluster_profile.pkl
@@ -120,9 +129,15 @@ def export_regression():
 
 def export_classification():
     from nb_utils import load_and_preprocess_data
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.tree import DecisionTreeClassifier
     from sklearn.svm import SVC
+    from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier, BaggingClassifier
+    from sklearn.neural_network import MLPClassifier
 
-    print("Exporting classification model …")
+    print("Exporting classification models …")
 
     data = load_and_preprocess_data(test_size=0.20, random_state=42)
     X_train = data["X_train"]
@@ -130,12 +145,28 @@ def export_classification():
     scaler = data["scaler"]
     encoder = data["encoder"]
 
-    model = SVC(kernel="rbf", C=10.0, gamma="scale", random_state=42)
-    model.fit(X_train, y_train)
-
     joblib.dump({"scaler": scaler, "encoder": encoder}, MODELS_DIR / "classification_preprocessor.pkl")
-    joblib.dump(model, MODELS_DIR / "classification_model.pkl")
-    print("  [OK] Classification artifacts saved.")
+
+    models = {
+        "logistic": LogisticRegression(max_iter=1000, random_state=42, solver='lbfgs'),
+        "knn": KNeighborsClassifier(n_neighbors=13, metric="manhattan"),
+        "nb": GaussianNB(var_smoothing=1e-3),
+        "dt": DecisionTreeClassifier(max_depth=5, min_samples_leaf=10, random_state=42),
+        "svm": SVC(kernel="rbf", C=10.0, gamma="scale", random_state=42, probability=True),
+        "rf": RandomForestClassifier(n_estimators=200, max_depth=20, max_features="sqrt", min_samples_leaf=1, random_state=42, n_jobs=-1),
+        "ada": AdaBoostClassifier(n_estimators=50, learning_rate=0.5, random_state=42),
+        "gb": GradientBoostingClassifier(n_estimators=100, learning_rate=0.05, max_depth=3, random_state=42),
+        "bag": BaggingClassifier(estimator=DecisionTreeClassifier(random_state=42), n_estimators=100, max_samples=1.0, max_features=1.0, random_state=42, n_jobs=-1),
+        "mlp": MLPClassifier(hidden_layer_sizes=(100,), activation="relu", alpha=0.001, max_iter=500, early_stopping=True, random_state=42),
+    }
+
+    for name, model in models.items():
+        print(f"  Training {name} …")
+        model.fit(X_train, y_train)
+        joblib.dump(model, MODELS_DIR / f"classification_model_{name}.pkl")
+        print(f"  [OK] {name} saved.")
+
+    print("  [OK] All classification artifacts saved.")
 
 
 # ─────────────────────────── CLUSTERING ────────────────────────────────────
